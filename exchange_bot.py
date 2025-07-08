@@ -79,12 +79,14 @@ async def process_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rate_source = get_currency_rate(source_currency)
         rate_target = get_currency_rate(target_currency)
         
-        # Правильная обработка конверсии валют
-        if source_currency != 'RUB':  # Конвертируем из иностранной валюты в рубли
-            converted_amount = round(amount * rate_source, 2)
-        else:  # Конвертируем из рублей в иностранную валюту
+        # Логика правильной обработки конверсий:
+        if source_currency == 'RUB':  # Из рублей в другую валюту
             converted_amount = round(amount / rate_target, 2)
-            
+        elif target_currency == 'RUB':  # Из другой валюты в рубли
+            converted_amount = round(amount * rate_source, 2)
+        else:  # Прямая конвертация между двумя иностранными валютами
+            converted_amount = round((amount * rate_source) / rate_target, 2)
+        
         await update.message.reply_text(
             f"{amount:.2f} {source_currency} равно примерно {converted_amount:.2f} {target_currency}.",
             parse_mode=None
