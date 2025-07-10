@@ -20,19 +20,26 @@ def get_currency_rate(currency):
     response = requests.get(f'https://www.cbr-xml-daily.ru/daily_json.js')
     data = response.json()
     
-    if currency == 'USD':
-        return float(data['Valute']['USD']['Value'])
-    elif currency == 'EUR':
-        return float(data['Valute']['EUR']['Value'])
-    else:
-        # Для рубля возвращаем единицу
+    rates = {
+        'USD': float(data['Valute']['USD']['Value']),  # Доллар США
+        'EUR': float(data['Valute']['EUR']['Value']),  # Евро
+        'BYN': float(data['Valute']['BYN']['Value']),  # Белорусский рубль
+        'CNY': float(data['Valute']['CNY']['Value'])   # Китайский Юань
+    }
+    
+    # Возвращаем 1 для российского рубля, так как он является базовой валютой
+    if currency == 'RUB':
         return 1.0
+    else:
+        return rates[currency]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("Рубль", callback_data='RUB')],
         [InlineKeyboardButton("Доллар", callback_data='USD')],
-        [InlineKeyboardButton("Евро", callback_data='EUR')]
+        [InlineKeyboardButton("Евро", callback_data='EUR')],
+        [InlineKeyboardButton("Бел. Рубль", callback_data='BYN')],
+        [InlineKeyboardButton("Кит. Юань", callback_data='CNY')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Выберите валюту:', reply_markup=reply_markup)
@@ -46,9 +53,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Меняем клавиатуру на выбор итоговой валюты
     new_keyboard = [
-        [InlineKeyboardButton("В доллар", callback_data=f'TO_USD')],
-        [InlineKeyboardButton("В рубль", callback_data=f'TO_RUB')],
-        [InlineKeyboardButton("В евро", callback_data=f'TO_EUR')]
+        [InlineKeyboardButton("В Доллар", callback_data=f'TO_USD')],
+        [InlineKeyboardButton("В Рубль", callback_data=f'TO_RUB')],
+        [InlineKeyboardButton("В Евро", callback_data=f'TO_EUR')],
+        [InlineKeyboardButton("В Бел. Рубль", callback_data=f'TO_BYN')],
+        [InlineKeyboardButton("В Кит. Юань", callback_data=f'TO_CNY')]
     ]
     reply_markup = InlineKeyboardMarkup(new_keyboard)
     await query.edit_message_text(text="Теперь выберите валюту, в которую перевести:", reply_markup=reply_markup)
@@ -99,8 +108,8 @@ if __name__ == '__main__':
     application = Application.builder().token(token).build()
 
     application.add_handler(CommandHandler('start', start))
-    application.add_handler(CallbackQueryHandler(button_callback, pattern=r'^RUB|USD|EUR$'))
-    application.add_handler(CallbackQueryHandler(convert_currency, pattern=r'^TO_(RUB|USD|EUR)$'))
+    application.add_handler(CallbackQueryHandler(button_callback, pattern=r'^RUB|USD|EUR|BYN|CNY$'))
+    application.add_handler(CallbackQueryHandler(convert_currency, pattern=r'^TO_(RUB|USD|EUR|BYN|CNY)$'))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_amount))
 
     print("Бот запущен...")
